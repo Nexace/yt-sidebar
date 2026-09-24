@@ -13,12 +13,25 @@
     return false;
   };
 
+  // URL of what's loaded in the player (song + playlist), falling back to the page
+  // URL. page.js answers the query synchronously via a DOM attribute.
+  function mediaUrl() {
+    window.dispatchEvent(new CustomEvent('ytsb-query'));
+    const m = document.documentElement.dataset.ytsbMedia;
+    if (!m) return location.href;
+    const { v, list } = JSON.parse(m);
+    const u = new URL('/watch', location.origin);
+    u.searchParams.set('v', v);
+    if (list) u.searchParams.set('list', list);
+    return u.toString();
+  }
+
   function report() {
     const v = video();
     const meta = navigator.mediaSession?.metadata;
     const title = meta?.title ? `${meta.title}${meta.artist ? ' — ' + meta.artist : ''}` : document.title;
     parent.postMessage({ ytSidebarState: {
-      url: location.href,
+      url: mediaUrl(),
       time: v ? v.currentTime : 0,
       rate: v ? v.playbackRate : 1,
       playing: v ? !v.paused : false,
@@ -72,7 +85,7 @@
         else if (!click(['.previous-button', '.ytp-prev-button'])) history.back();
         break;
       case 'quality':
-        // Player API lives in the page's JS world; quality.js (MAIN world) applies it.
+        // Player API lives in the page's JS world; page.js (MAIN world) applies it.
         window.dispatchEvent(new CustomEvent('ytsb-quality', { detail: quality }));
         return;
       case 'report':

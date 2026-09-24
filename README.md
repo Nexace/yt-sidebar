@@ -40,4 +40,4 @@ entry should be a few MB and ~0% CPU when idle.
 | `frame.js` | Inside the YouTube frame: reports playback, handles play/next/prev |
 | `player.*` | Offscreen background player used while the panel is closed |
 | `shared.js` | Position helpers shared by panel and service worker |
-| `quality.js` | Inside the YouTube frame (page world): applies quality cap via the player API |
+| `page.js` | Inside the YouTube frame (page world): reads the current song/playlist and applies the quality cap via the player API |

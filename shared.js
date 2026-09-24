@@ -13,3 +13,8 @@ function posNow(r) {
   const drift = r.playing ? (Date.now() - r.at) / 1000 * (r.rate || 1) : 0;
   return { url: r.url, time: r.time + drift };
 }
+
+// Video ID from a watch URL (null if none).
+function vidOf(url) {
+  try { return new URL(url).searchParams.get('v'); } catch { return null; }
+}

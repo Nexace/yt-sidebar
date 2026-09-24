@@ -13,11 +13,12 @@ YouTube and YouTube Music in a persistent browser side panel (Chrome, Edge, Brav
 - Same panel on every tab and site; Music / YouTube switch.
 - Remembers page + playback time per app across panel close and browser restart.
 - **▁ Minimize** collapses to a control bar; audio keeps playing, video drops to 144p.
-- **Keeps playing when the panel is closed.** If something is playing when you close the
-  panel, it continues in a hidden background player (control it from the browser's
-  media button). Reopening the panel is seamless: the background keeps playing while
-  the panel loads the same song muted, then the panel takes over at the exact position.
-  Closing while paused doesn't start anything.
+- **Keeps playing when the panel is closed — with no gap either way.** While something
+  plays in the panel, a paused, muted standby copy of the song is kept loaded in the
+  background (about 200–400 MB). Hiding the panel just jumps it to the right spot and
+  unmutes it (~0.1 s). Reopening loads the panel muted while the background keeps
+  playing, then takes over at the exact position. Control background playback from the
+  browser's media button. The standby copy is closed after 1 minute of nothing playing.
 - **Auto-hide:** the panel closes when you click anywhere else in the browser (the music
   keeps playing in the background). Click **📌** to keep it open. Switching to another
   app doesn't close it.
@@ -39,6 +40,6 @@ entry should be a few MB and ~0% CPU when idle.
 | `background.js` | Opens panel on icon click; strips YouTube's anti-framing headers for this extension's frames only |
 | `sidepanel.*` | Panel UI, state save/restore, minimize, auto-unload |
 | `frame.js` | Inside the YouTube frame: reports playback, handles play/next/prev |
-| `player.*` | Offscreen background player used while the panel is closed |
+| `player.*` | Offscreen player: standby copy while the panel plays, active player while it's closed |
 | `shared.js` | Position helpers shared by panel and service worker |
 | `page.js` | Inside the YouTube frame (page world): reads the current song/playlist and applies the quality cap via the player API |

@@ -16,6 +16,7 @@ minimal CPU/memory (event-driven, auto-unload, quality cap).
 | 5. Polish: icons, open-in-tab | done (user confirmed panel works) |
 | 6. Background playback when panel closed (offscreen handoff) | verified in headless Brave 152 with the real side panel (close → bg plays, reopen → handoff); user reported silence on first build, **needs retest** |
 | 6b. Seamless reopen (bg plays until panel is ready, then seek + release) | verified headless Brave: 0 silent / 0 double samples at 200 ms |
+| 6c. Standby player (option B): instant hide | verified headless Brave: hide→audible 70–101 ms (3 runs), idle close after 60 s paused. Ad-in-standby path not yet observed in a test |
 | 7. Auto-hide on click-away + 📌 pin | code done; **can't be tested headless** (no real focus changes), needs manual test |
 
 ## Testing notes
@@ -31,7 +32,9 @@ minimal CPU/memory (event-driven, auto-unload, quality cap).
 - Brave Shields doesn't break the framed page.
 - Offscreen document (AUDIO_PLAYBACK) is allowed to autoplay the YouTube iframe.
 - Hand-built YT Music queues are lost on handoff (only song + playlist + time carry over).
-- Hiding still has a 1–3 s gap (panel is destroyed instantly). Option B (standby player, +200–400 MB) would remove it; not built.
+- Standby costs ~200–400 MB while the panel plays (user chose this over the 1–3 s hide gap).
+- If the standby copy is still in a pre-roll ad when the panel hides, the ad plays first (seek applied after it).
+- Offscreen doc uses reasons AUDIO_PLAYBACK + IFRAME_SCRIPTING: AUDIO_PLAYBACK alone is auto-closed after ~30 s of silence (verified).
 
 ## Last updated
-2026-09-24 — user confirmed panel works in Brave; background playback fixed (hand off song, not page URL) and seamless reopen added; awaiting user retest.
+2026-09-24 — user confirmed panel works in Brave; background playback fixed (hand off song, not page URL) and seamless reopen added; standby player (instant hide) added; awaiting user retest.

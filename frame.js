@@ -26,12 +26,33 @@
     return { url: u.toString(), vid: v };
   }
 
-  // While the panel is taking over from the background player, keep this frame
-  // muted (including any ad) so the two never play audibly at the same time.
-  let syncing = false;
-  const holdMute = e => { if (syncing && e.target instanceof HTMLMediaElement) e.target.muted = true; };
-  document.addEventListener('play', holdMute, true);
-  document.addEventListener('loadedmetadata', holdMute, true);
+  // syncing: the panel is taking over from the background player — stay muted
+  //          (including any ad) so the two never play audibly at the same time.
+  // holding: this is the background standby copy — stay paused and muted.
+  // Ads can't be skipped, so a standby copy lets a pre-roll run (muted) and only
+  // pauses once the song itself is loaded. A seek asked for during an ad is applied
+  // when the song starts, advanced by the time spent on the ad.
+  let syncing = false, holding = false, pendingSeek = null;
+  const adShowing = () => !!document.querySelector('.ad-showing');
+  const seekTo = (v, time) => {
+    if (time == null) return;
+    if (adShowing()) pendingSeek = { time, at: Date.now() };
+    else v.currentTime = time;
+  };
+  const applyPendingSeek = v => {
+    if (!pendingSeek || adShowing()) return;
+    v.currentTime = pendingSeek.time + (Date.now() - pendingSeek.at) / 1000;
+    pendingSeek = null;
+  };
+  const holdMute = e => {
+    const v = e.target;
+    if (!(v instanceof HTMLMediaElement)) return;
+    if (syncing || holding) v.muted = true;
+    if (e.type === 'loadedmetadata') return;
+    applyPendingSeek(v);
+    if (e.type === 'play' && holding && !adShowing()) v.pause();
+  };
+  for (const t of ['play', 'playing', 'loadedmetadata']) document.addEventListener(t, holdMute, true);
 
   function report() {
     const v = video();
@@ -102,10 +123,18 @@
         syncing = true;
         if (v) v.muted = true;
         return;
+      case 'hold':
+        holding = true;
+        if (v) { v.muted = true; applyPendingSeek(v); if (!adShowing()) v.pause(); }
+        return;
+      case 'seek':
+        if (v) seekTo(v, time);
+        return;
       case 'sync-finish':
         syncing = false;
+        holding = false;
         if (v) {
-          if (time != null) v.currentTime = time;
+          seekTo(v, time);
           v.muted = false;
           v.play().catch(() => {});
         }

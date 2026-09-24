@@ -97,7 +97,6 @@ function setMin(m) {
 }
 
 const send = (cmd, extra) => frame.contentWindow?.postMessage({ ytSidebar: cmd, ...extra }, '*');
-const vidOf = url => { try { return new URL(url).searchParams.get('v'); } catch { return null; } };
 
 // Seamless takeover from the background player: our frame loads the same song
 // muted while the background keeps playing; once we're really playing (not an ad)

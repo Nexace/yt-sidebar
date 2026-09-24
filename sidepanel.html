@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>YT Sidebar</title>
+  <link rel="stylesheet" href="sidepanel.css">
+</head>
+<body>
+  <header id="bar">
+    <div id="tabs">
+      <button data-app="music" title="YouTube Music">Music</button>
+      <button data-app="yt" title="YouTube">YouTube</button>
+    </div>
+    <div id="now"></div>
+    <div id="controls">
+      <button id="prev" title="Previous">⏮</button>
+      <button id="play" title="Play / pause">⏯</button>
+      <button id="next" title="Next">⏭</button>
+      <select id="quality" title="Video quality cap (lower = less CPU)">
+        <option value="auto">Auto</option>
+        <option value="medium">360p</option>
+        <option value="tiny">144p</option>
+      </select>
+      <button id="reload" title="Reload">⟳</button>
+      <button id="min" title="Minimize / expand">▁</button>
+    </div>
+  </header>
+  <iframe id="frame" allow="autoplay; encrypted-media; fullscreen; picture-in-picture"></iframe>
+  <div id="sleep" hidden>
+    <p>Unloaded to save memory.</p>
+    <button id="resume">Resume</button>
+  </div>
+  <script src="sidepanel.js"></script>
+</body>
+</html>

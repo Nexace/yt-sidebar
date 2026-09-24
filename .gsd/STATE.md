@@ -34,4 +34,4 @@ minimal CPU/memory (event-driven, auto-unload, quality cap).
 - Hiding still has a 1–3 s gap (panel is destroyed instantly). Option B (standby player, +200–400 MB) would remove it; not built.
 
 ## Last updated
-2026-09-24 — initial implementation, not yet loaded in a browser.
+2026-09-24 — user confirmed panel works in Brave; background playback fixed (hand off song, not page URL) and seamless reopen added; awaiting user retest.

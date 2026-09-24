@@ -37,8 +37,10 @@ installRules();
 // --- Background playback -------------------------------------------------------
 // A closed side panel is destroyed, so playback would stop. Each open panel holds a
 // port to us and streams its playback state; when the port drops (panel closed)
-// while playing, we continue in an offscreen document. When a panel opens again,
-// it asks for a handoff: we read the offscreen position, close it, and return it.
+// while playing, we continue in an offscreen document. When a panel opens again it
+// `peek`s at the background position, loads the same song muted, and once it is
+// actually playing it seeks to the background position and asks us to `release`
+// the background player — so reopening has no silent gap.
 
 // Serialize start/stop so a quick close→reopen can't leave both playing.
 let chain = Promise.resolve();
@@ -69,7 +71,8 @@ async function startBackground(s) {
   if (await chrome.offscreen.hasDocument()) return;
   console.log('[yt-sidebar] starting background player for', s.url);
   const p = posNow(s);
-  await chrome.storage.session.set({ bgApp: s.app });
+  // Where it started, for peeks that arrive before the player's first report.
+  await chrome.storage.session.set({ bg: { app: s.app, url: p.url, time: p.time, rate: 1, playing: true, at: Date.now() } });
   await chrome.offscreen.createDocument({
     url: 'player.html?src=' + encodeURIComponent(withTime(p.url, p.time)),
     reasons: ['AUDIO_PLAYBACK'],
@@ -77,29 +80,38 @@ async function startBackground(s) {
   });
 }
 
-async function takeBack() {
+// Current background position (without stopping it), or null if none is running.
+async function peek() {
   if (!(await chrome.offscreen.hasDocument())) return null;
-  const r = await chrome.runtime.sendMessage({ type: 'bgQuery' }).catch(() => null);
+  const [r, { bg }] = await Promise.all([
+    chrome.runtime.sendMessage({ type: 'bgQuery' }).catch(() => null),
+    chrome.storage.session.get('bg')
+  ]);
+  const src = r || bg;
+  if (!src || !bg) return null;
+  return { app: bg.app, ...posNow(src), playing: src.playing };
+}
+
+async function release() {
+  if (!(await chrome.offscreen.hasDocument())) return;
   await chrome.offscreen.closeDocument();
-  console.log('[yt-sidebar] handoff to panel at', r && Math.round(posNow(r).time) + 's');
-  if (!r) return null;
-  const { bgApp } = await chrome.storage.session.get('bgApp');
-  return { app: bgApp, ...posNow(r), playing: r.playing };
+  console.log('[yt-sidebar] background player released to panel');
 }
 
 // While playing in the background, keep the saved position current so it survives
 // the offscreen document closing on its own (Chrome closes it ~30s after audio stops).
 async function persistBg(r) {
-  const [{ state }, { bgApp }] = await Promise.all([
-    chrome.storage.local.get('state'), chrome.storage.session.get('bgApp')
+  const [{ state }, { bg }] = await Promise.all([
+    chrome.storage.local.get('state'), chrome.storage.session.get('bg')
   ]);
-  if (!state || !bgApp) return;
-  state.app = bgApp;
-  state.pos = { ...state.pos, [bgApp]: posNow(r) };
+  if (!state || !bg) return;
+  state.app = bg.app;
+  state.pos = { ...state.pos, [bg.app]: posNow(r) };
   await chrome.storage.local.set({ state });
 }
 
 chrome.runtime.onMessage.addListener((msg, _sender, reply) => {
-  if (msg.type === 'handoff') { serial(takeBack).then(reply); return true; }
+  if (msg.type === 'peek') { serial(peek).then(reply); return true; }
+  if (msg.type === 'release') { serial(release).then(() => reply()); return true; }
   if (msg.type === 'bgState') persistBg(msg.state);
 });

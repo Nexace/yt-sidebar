@@ -15,23 +15,33 @@
 
   // URL of what's loaded in the player (song + playlist), falling back to the page
   // URL. page.js answers the query synchronously via a DOM attribute.
-  function mediaUrl() {
+  function media() {
     window.dispatchEvent(new CustomEvent('ytsb-query'));
     const m = document.documentElement.dataset.ytsbMedia;
-    if (!m) return location.href;
+    if (!m) return { url: location.href, vid: new URL(location.href).searchParams.get('v') };
     const { v, list } = JSON.parse(m);
     const u = new URL('/watch', location.origin);
     u.searchParams.set('v', v);
     if (list) u.searchParams.set('list', list);
-    return u.toString();
+    return { url: u.toString(), vid: v };
   }
+
+  // While the panel is taking over from the background player, keep this frame
+  // muted (including any ad) so the two never play audibly at the same time.
+  let syncing = false;
+  const holdMute = e => { if (syncing && e.target instanceof HTMLMediaElement) e.target.muted = true; };
+  document.addEventListener('play', holdMute, true);
+  document.addEventListener('loadedmetadata', holdMute, true);
 
   function report() {
     const v = video();
     const meta = navigator.mediaSession?.metadata;
     const title = meta?.title ? `${meta.title}${meta.artist ? ' — ' + meta.artist : ''}` : document.title;
+    const { url, vid } = media();
     parent.postMessage({ ytSidebarState: {
-      url: mediaUrl(),
+      url,
+      vid,
+      ad: !!document.querySelector('.ad-showing'),
       time: v ? v.currentTime : 0,
       rate: v ? v.playbackRate : 1,
       playing: v ? !v.paused : false,
@@ -53,7 +63,7 @@
     // Metadata/title are set slightly after the media event fires.
     setTimeout(report, e.type === 'loadedmetadata' ? 800 : 0);
   };
-  for (const t of ['play', 'pause', 'ended', 'seeked', 'loadedmetadata', 'ratechange']) {
+  for (const t of ['play', 'playing', 'pause', 'ended', 'seeked', 'loadedmetadata', 'ratechange']) {
     document.addEventListener(t, onMedia, true);
   }
   // Lets the panel auto-hide when focus leaves this frame for the web page.
@@ -66,7 +76,7 @@
   addEventListener('message', e => {
     if (e.origin !== parentOrigin || !e.data?.ytSidebar) return;
     const v = video();
-    const { ytSidebar: cmd, quality } = e.data;
+    const { ytSidebar: cmd, quality, time } = e.data;
     switch (cmd) {
       case 'toggle':
         if (v) v.paused ? v.play() : v.pause();
@@ -88,6 +98,18 @@
         // Player API lives in the page's JS world; page.js (MAIN world) applies it.
         window.dispatchEvent(new CustomEvent('ytsb-quality', { detail: quality }));
         return;
+      case 'sync-start':
+        syncing = true;
+        if (v) v.muted = true;
+        return;
+      case 'sync-finish':
+        syncing = false;
+        if (v) {
+          if (time != null) v.currentTime = time;
+          v.muted = false;
+          v.play().catch(() => {});
+        }
+        break;
       case 'report':
         break;
     }

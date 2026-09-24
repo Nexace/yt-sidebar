@@ -15,7 +15,8 @@ YouTube and YouTube Music in a persistent browser side panel (Chrome, Edge, Brav
 - **▁ Minimize** collapses to a control bar; audio keeps playing, video drops to 144p.
 - **Keeps playing when the panel is closed.** If something is playing when you close the
   panel, it continues in a hidden background player (control it from the browser's
-  media button). Reopening the panel takes playback back at the current position.
+  media button). Reopening the panel is seamless: the background keeps playing while
+  the panel loads the same song muted, then the panel takes over at the exact position.
   Closing while paused doesn't start anything.
 - **Auto-hide:** the panel closes when you click anywhere else in the browser (the music
   keeps playing in the background). Click **📌** to keep it open. Switching to another

@@ -9,7 +9,7 @@ let live = null;        // latest report from frame.js
 let asleep = false;
 let qualitySent = null; // quality last sent to the current frame document
 let saveTimer = 0, sleepTimer = 0;
-let resumePlay = false; // continue playing after a handoff from the background player
+let resumePlay = false; // keep nudging play until the frame starts (after a takeover)
 let port = null;
 
 // Keep a port open to the service worker and stream playback state over it. When
@@ -97,6 +97,36 @@ function setMin(m) {
 }
 
 const send = (cmd, extra) => frame.contentWindow?.postMessage({ ytSidebar: cmd, ...extra }, '*');
+const vidOf = url => { try { return new URL(url).searchParams.get('v'); } catch { return null; } };
+
+// Seamless takeover from the background player: our frame loads the same song
+// muted while the background keeps playing; once we're really playing (not an ad)
+// we jump to the background's position, unmute, and release it. No silent gap.
+let takeover = null;
+
+function startTakeover(bg) {
+  takeover = { vid: vidOf(bg.url), timer: setTimeout(finishTakeover, 20000) };
+  resumePlay = true;
+}
+
+async function finishTakeover() {
+  const t = takeover;
+  if (!t) return;
+  clearTimeout(t.timer);
+  takeover = null;
+  const bg = await chrome.runtime.sendMessage({ type: 'peek' }).catch(() => null);
+  if (bg?.playing && live?.vid === t.vid && vidOf(bg.url) !== t.vid) {
+    // The background moved on to the next song while we loaded: follow it.
+    live = null;
+    state.pos[state.app] = { url: bg.url, time: bg.time };
+    startTakeover(bg);
+    load(state.app);
+    return;
+  }
+  const sameSong = bg?.playing && live?.vid && vidOf(bg.url) === live.vid;
+  send('sync-finish', { time: sameSong ? bg.time + 0.15 : null });
+  chrome.runtime.sendMessage({ type: 'release' }).catch(() => {});
+}
 
 // Reports from frame.js inside the YouTube iframe.
 addEventListener('message', e => {
@@ -106,6 +136,10 @@ addEventListener('message', e => {
   if (first) sendQuality(true); // fresh frame document starts at 'auto'
   if (live.playing) resumePlay = false;
   else if (resumePlay) send('play');
+  if (takeover) {
+    send('sync-start'); // idempotent; keeps the frame muted until we take over
+    if (live.playing && !live.ad) finishTakeover();
+  }
   now.textContent = (live.playing ? '▶ ' : '⏸ ') + (live.title || '');
   now.title = live.title || '';
   scheduleSleep();
@@ -155,17 +189,18 @@ $('min').onclick = () => { setMin(!state.minimized); saveNow(); };
 $('pin').onclick = () => { setPinned(!state.pinned); saveNow(); };
 qualitySel.onchange = () => { state.quality = qualitySel.value; sendQuality(); saveNow(); };
 
-// Take playback back from the background player (if the panel was closed while
-// playing) before loading, so we resume from where it actually is now.
+// If the background player is running (panel was closed while playing), load
+// what it's playing and take over seamlessly; if it's paused, just stop it.
 Promise.all([
   chrome.storage.local.get('state'),
-  chrome.runtime.sendMessage({ type: 'handoff' }).catch(() => null)
+  chrome.runtime.sendMessage({ type: 'peek' }).catch(() => null)
 ]).then(([{ state: saved }, bg]) => {
   if (saved) state = { ...state, ...saved, pos: saved.pos || {} };
   if (bg?.url && bg.app) {
     state.app = bg.app;
     state.pos[bg.app] = { url: bg.url, time: bg.time };
-    resumePlay = bg.playing;
+    if (bg.playing) startTakeover(bg);
+    else chrome.runtime.sendMessage({ type: 'release' }).catch(() => {});
   }
   qualitySel.value = state.quality;
   setPinned(!!state.pinned);

@@ -55,6 +55,9 @@
       case 'toggle':
         if (v) v.paused ? v.play() : v.pause();
         break;
+      case 'play':
+        v?.play().catch(() => {});
+        break;
       case 'pause':
         v?.pause();
         break;

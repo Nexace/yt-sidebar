@@ -9,13 +9,26 @@ let live = null;        // latest report from frame.js
 let asleep = false;
 let qualitySent = null; // quality last sent to the current frame document
 let saveTimer = 0, sleepTimer = 0;
+let resumePlay = false; // continue playing after a handoff from the background player
+let port = null;
+
+// Keep a port open to the service worker and stream playback state over it. When
+// this panel closes, the port drops and the worker continues playback offscreen.
+function connect() {
+  port = chrome.runtime.connect({ name: 'panel' });
+  port.onDisconnect.addListener(() => setTimeout(connect, 100)); // worker restarted
+  pushState();
+}
+function pushState() {
+  try {
+    port?.postMessage({ type: 'state', state: live && !asleep ? { app: state.app, ...live } : { playing: false } });
+  } catch {}
+}
 
 // Position right now, extrapolated from the last report (frame only reports on
 // events + every 30s while playing, so we don't need it to poll).
 function currentPos() {
-  if (!live) return state.pos[state.app];
-  const drift = live.playing ? (Date.now() - live.at) / 1000 * (live.rate || 1) : 0;
-  return { url: live.url, time: live.time + drift };
+  return live ? posNow(live) : state.pos[state.app];
 }
 
 function saveNow() {
@@ -28,13 +41,6 @@ function saveNow() {
 }
 // Coalesce bursts (e.g. seeked + play) into one write.
 const save = () => { clearTimeout(saveTimer); saveTimer = setTimeout(saveNow, 1000); };
-
-function withTime(url, time) {
-  if (!time || !/[?&]v=/.test(url)) return url;
-  const u = new URL(url);
-  u.searchParams.set('t', Math.floor(time) + 's');
-  return u.toString();
-}
 
 function effectiveQuality() {
   // Minimized means audio-only listening: drop to the lowest video quality.
@@ -75,6 +81,7 @@ function sleep() {
   live = null;
   frame.src = 'about:blank'; // frees the whole YouTube page
   setAsleep(true);
+  pushState();
 }
 
 function scheduleSleep() {
@@ -97,10 +104,13 @@ addEventListener('message', e => {
   const first = !live;
   live = e.data.ytSidebarState;
   if (first) sendQuality(true); // fresh frame document starts at 'auto'
+  if (live.playing) resumePlay = false;
+  else if (resumePlay) send('play');
   now.textContent = (live.playing ? '▶ ' : '⏸ ') + (live.title || '');
   now.title = live.title || '';
   scheduleSleep();
   save();
+  pushState();
 });
 
 addEventListener('pagehide', saveNow);
@@ -108,13 +118,14 @@ document.addEventListener('visibilitychange', () => document.hidden && saveNow()
 
 document.querySelectorAll('#tabs button').forEach(b =>
   b.addEventListener('click', () => b.dataset.app !== state.app && load(b.dataset.app)));
-$('play').onclick = () => asleep ? load(state.app) : send('toggle');
+$('play').onclick = () => { resumePlay = false; asleep ? load(state.app) : send('toggle'); };
 $('next').onclick = () => send('next');
 $('prev').onclick = () => send('prev');
 $('reload').onclick = () => load(state.app);
 $('popout').onclick = () => {
   const p = asleep ? state.pos[state.app] : currentPos();
   const url = p ? withTime(p.url, p.time) : HOME[state.app];
+  resumePlay = false;
   if (!asleep) send('pause'); // hand playback over to the tab, don't double up audio
   chrome.tabs.create({ url });
 };
@@ -122,9 +133,20 @@ $('resume').onclick = () => load(state.app);
 $('min').onclick = () => { setMin(!state.minimized); saveNow(); };
 qualitySel.onchange = () => { state.quality = qualitySel.value; sendQuality(); saveNow(); };
 
-chrome.storage.local.get('state').then(({ state: saved }) => {
+// Take playback back from the background player (if the panel was closed while
+// playing) before loading, so we resume from where it actually is now.
+Promise.all([
+  chrome.storage.local.get('state'),
+  chrome.runtime.sendMessage({ type: 'handoff' }).catch(() => null)
+]).then(([{ state: saved }, bg]) => {
   if (saved) state = { ...state, ...saved, pos: saved.pos || {} };
+  if (bg?.url && bg.app) {
+    state.app = bg.app;
+    state.pos[bg.app] = { url: bg.url, time: bg.time };
+    resumePlay = bg.playing;
+  }
   qualitySel.value = state.quality;
   setMin(state.minimized);
   load(state.app);
+  connect();
 });

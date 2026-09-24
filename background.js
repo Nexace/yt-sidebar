@@ -81,6 +81,10 @@ async function onPanelState(s) {
   const has = await chrome.offscreen.hasDocument();
   const bg = has ? await getBg() : null;
   if (bg?.mode === 'active') return; // panel is taking over; it will release us
+  if (s.instant === false) { // user turned instant hide off: no standby copy
+    if (has) { await chrome.offscreen.closeDocument(); console.log('[yt-sidebar] instant hide off — standby closed'); }
+    return;
+  }
   if (!s.playing || !s.vid) { if (has) bgCmd('panel', { playing: false }); return; }
   if (s.ad) return;
   if (!has) return createPlayer('standby', s);
@@ -120,11 +124,18 @@ async function peek() {
   return { app: bg.app, ...posNow(src), playing: src.playing };
 }
 
-// Panel has taken over: go back to being its standby copy.
+// Panel has taken over: go back to being its standby copy (or close, if the
+// user turned instant hide off).
 async function release() {
   if (!(await chrome.offscreen.hasDocument())) return;
   const bg = await getBg();
   if (bg?.mode !== 'active') return;
+  const { panelState } = await chrome.storage.session.get('panelState');
+  if (panelState?.instant === false) {
+    await chrome.offscreen.closeDocument();
+    console.log('[yt-sidebar] panel took over; background player closed');
+    return;
+  }
   await setBg({ ...bg, mode: 'standby' });
   bgCmd('standby');
   console.log('[yt-sidebar] panel took over; background player back on standby');

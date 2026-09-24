@@ -2,8 +2,8 @@ const HOME = { music: 'https://music.youtube.com/', yt: 'https://www.youtube.com
 const $ = id => document.getElementById(id);
 const frame = $('frame'), qualitySel = $('quality');
 
-// { app, quality, pinned, pos: { music: {url, time}, yt: {url, time} } }
-let state = { app: 'music', quality: 'auto', pos: {} };
+// { app, quality, pinned, instant, pos: { music: {url, time}, yt: {url, time} } }
+let state = { app: 'music', quality: 'auto', instant: true, pos: {} };
 let live = null;        // latest report from frame.js
 let qualitySent = null; // quality last sent to the current frame document
 let saveTimer = 0;
@@ -19,7 +19,8 @@ function connect() {
 }
 function pushState() {
   try {
-    port?.postMessage({ type: 'state', state: live ? { app: state.app, ...live } : { playing: false } });
+    const s = live ? { app: state.app, ...live } : { playing: false };
+    port?.postMessage({ type: 'state', state: { ...s, instant: state.instant } });
   } catch {}
 }
 
@@ -125,6 +126,13 @@ function setPinned(p) {
   $('pin').classList.toggle('active', p);
 }
 
+// Instant hide = the worker keeps a standby copy loaded while we play.
+function setInstant(on) {
+  state.instant = on;
+  $('instant').classList.toggle('active', on);
+  pushState();
+}
+
 addEventListener('pagehide', saveNow);
 document.addEventListener('visibilitychange', () => document.hidden && saveNow());
 
@@ -142,6 +150,7 @@ $('popout').onclick = () => {
   chrome.tabs.create({ url });
 };
 $('pin').onclick = () => { setPinned(!state.pinned); saveNow(); };
+$('instant').onclick = () => { setInstant(!state.instant); saveNow(); };
 qualitySel.onchange = () => { state.quality = qualitySel.value; sendQuality(); saveNow(); };
 
 // If the background player is running (panel was closed while playing), load
@@ -160,6 +169,7 @@ Promise.all([
   }
   qualitySel.value = state.quality;
   setPinned(!!state.pinned);
+  setInstant(state.instant !== false);
   load(state.app);
   connect();
 });

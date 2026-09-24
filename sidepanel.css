@@ -11,7 +11,7 @@ html, body { margin: 0; height: 100%; background: var(--bg); color: var(--fg);
 button, select { background: var(--bg); border: 1px solid var(--line); color: var(--fg);
   border-radius: 6px; padding: 3px 8px; cursor: pointer; font: inherit; }
 button:hover, select:hover { border-color: var(--muted); }
-#tabs button.active, #pin.active { border-color: var(--accent); color: var(--accent); }
-#pin:not(.active) { opacity: .5; }
+#tabs button.active, .toggle.active { border-color: var(--accent); color: var(--accent); }
+.toggle:not(.active) { opacity: .5; }
 #controls { display: flex; gap: 4px; margin-left: auto; }
 #frame { flex: 1; width: 100%; border: 0; }

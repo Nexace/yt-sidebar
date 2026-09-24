@@ -12,12 +12,14 @@ YouTube and YouTube Music in a persistent browser side panel (Chrome, Edge, Brav
 
 - Same panel on every tab and site; Music / YouTube switch.
 - Remembers page + playback time per app across panel close and browser restart.
-- **Keeps playing when the panel is closed — with no gap either way.** While something
-  plays in the panel, a paused, muted standby copy of the song is kept loaded in the
-  background (about 200–400 MB). Hiding the panel just jumps it to the right spot and
-  unmutes it (~0.1 s). Reopening loads the panel muted while the background keeps
-  playing, then takes over at the exact position. Control background playback from the
-  browser's media button. The standby copy is closed after 1 minute of nothing playing.
+- **Keeps playing when the panel is closed — with no gap either way.** Hiding the panel
+  hands playback to a hidden background player; reopening loads the panel muted while
+  the background keeps playing, then takes over at the exact position. Control
+  background playback from the browser's media button or the global shortcuts below.
+- **⚡ Instant hide** (on by default): while something plays in the panel, a paused,
+  muted standby copy of the song is kept loaded, so hiding takes ~0.1 s instead of
+  1–3 s. Costs about 120 MB. Turn it off to free that memory. Any background copy is
+  closed after 1 minute of nothing playing.
 - **Auto-hide:** the panel closes when you click anywhere else in the browser (the music
   keeps playing in the background). Click **📌** to keep it open. Switching to another
   app doesn't close it.

@@ -15,6 +15,9 @@ let port = null;
 function connect() {
   port = chrome.runtime.connect({ name: 'panel' });
   port.onDisconnect.addListener(() => setTimeout(connect, 100)); // worker restarted
+  port.onMessage.addListener(msg => { // global shortcuts, routed here by the worker
+    if (msg.type === 'control') { resumePlay = false; send(msg.action); }
+  });
   pushState();
 }
 function pushState() {

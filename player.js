@@ -60,6 +60,9 @@ chrome.runtime.onMessage.addListener((msg, _sender, reply) => {
     case 'seek': // keep the buffer near the panel's position
       send('seek', { time: msg.time });
       break;
+    case 'control': // global shortcut while playing in the background
+      send(msg.action);
+      break;
     case 'panel':
       panelPlaying = msg.playing;
       if (mode === 'standby') armIdle(!panelPlaying);

@@ -66,10 +66,12 @@ async function createPlayer(mode, s) {
 }
 
 // The panel streams its state over a port; the port dropping means it closed.
+const panelPorts = new Set();
 chrome.runtime.onConnect.addListener(port => {
   if (port.name !== 'panel') return;
+  panelPorts.add(port);
   port.onMessage.addListener(msg => { if (msg.type === 'state') serial(() => onPanelState(msg.state)); });
-  port.onDisconnect.addListener(() => serial(() => panelClosed('port')));
+  port.onDisconnect.addListener(() => { panelPorts.delete(port); serial(() => panelClosed('port')); });
 });
 // Official signal for the real side panel closing (Chromium 141+).
 chrome.sidePanel.onClosed?.addListener(() => serial(() => panelClosed('onClosed')));
@@ -159,6 +161,21 @@ async function persistBg(r) {
   state.pos = { ...state.pos, [bg.app]: posNow(r) };
   await chrome.storage.local.set({ state });
 }
+
+// Global media shortcuts (work even when the browser isn't focused): send them to
+// whichever player is audible — the open panel, else the background player.
+const COMMANDS = { 'play-pause': 'toggle', 'next-track': 'next', 'prev-track': 'prev' };
+async function handleCommand(name) {
+  const action = COMMANDS[name];
+  if (!action) return;
+  if (panelPorts.size) {
+    for (const p of panelPorts) p.postMessage({ type: 'control', action });
+    return;
+  }
+  const bg = (await chrome.offscreen.hasDocument()) ? await getBg() : null;
+  if (bg?.mode === 'active') bgCmd('control', { action });
+}
+chrome.commands.onCommand.addListener(handleCommand);
 
 chrome.runtime.onMessage.addListener((msg, _sender, reply) => {
   if (msg.type === 'peek') { serial(peek).then(reply); return true; }

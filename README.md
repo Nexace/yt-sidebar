@@ -26,6 +26,19 @@ YouTube and YouTube Music in a persistent browser side panel (Chrome, Edge, Brav
 - **⧉ Open in tab** opens the current page in a normal tab at the same playback time and pauses the panel.
 - Quality cap (Auto / 360p / 144p) for video mode.
 
+## Shortcuts
+
+| Keys | Action | Works when |
+|---|---|---|
+| **Alt+Y** | Open / close the panel | Brave is focused |
+| **Ctrl+Shift+7** | Previous track | Anywhere (global) |
+| **Ctrl+Shift+8** | Play / pause | Anywhere (global) |
+| **Ctrl+Shift+9** | Next track | Anywhere (global) |
+
+Change them at `brave://extensions/shortcuts`. Global shortcuts must be Ctrl+Shift+digit.
+They control the panel if it's open, otherwise the background player. Your keyboard's
+hardware media keys also work, through the browser's own media controls.
+
 ## Resource budget
 
 The extension itself is event-driven: no polling while paused, one position report

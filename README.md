@@ -20,9 +20,9 @@ YouTube and YouTube Music in a persistent browser side panel (Chrome, Edge, Brav
   muted standby copy of the song is kept loaded, so hiding takes ~0.1 s instead of
   1–3 s. Costs about 120 MB. Turn it off to free that memory. Any background copy is
   closed after 1 minute of nothing playing.
-- **Auto-hide:** the panel closes when you click anywhere else in the browser (the music
-  keeps playing in the background). Click **📌** to keep it open. Switching to another
-  app doesn't close it.
+- **Auto-hide:** the panel closes when you click into the page or elsewhere in the
+  browser (the music keeps playing in the background). It stays open when you switch,
+  open or close tabs, or switch to another app. Click **📌** to keep it open always.
 - **⧉ Open in tab** opens the current page in a normal tab at the same playback time and pauses the panel.
 
 ## Shortcuts

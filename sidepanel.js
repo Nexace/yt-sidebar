@@ -99,14 +99,21 @@ addEventListener('message', e => {
 
 // Auto-hide: close the panel when you click anywhere else in the browser. Playback
 // continues in the background player. Not when focus moved into our own YouTube
-// frame (document still has focus) or to another app (browser window unfocused).
-let windowId;
+// frame (document still has focus), to another app (browser window unfocused), or
+// because you switched / opened / closed a tab (the panel stays across tabs).
+let windowId, lastTabSwitch = 0;
 chrome.windows.getCurrent().then(w => { windowId = w.id; });
+chrome.tabs.onActivated.addListener(info => {
+  if (info.windowId === windowId) lastTabSwitch = Date.now();
+});
 const maybeHide = () => setTimeout(async () => {
   if (state.pinned || document.hasFocus() || windowId == null) return;
+  // The blur and the tab-activated event arrive in either order; the delay above
+  // lets both land before deciding.
+  if (Date.now() - lastTabSwitch < 600) return;
   const w = await chrome.windows.get(windowId).catch(() => null);
   if (w?.focused) chrome.sidePanel.close?.({ windowId }).catch(() => {});
-}, 50);
+}, 200);
 addEventListener('blur', maybeHide);
 // Focus inside the YouTube frame doesn't blur us when it leaves; frame.js tells us.
 addEventListener('message', e => {

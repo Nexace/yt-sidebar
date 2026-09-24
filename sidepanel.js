@@ -113,6 +113,27 @@ addEventListener('message', e => {
   pushState();
 });
 
+// Auto-hide: close the panel when you click anywhere else in the browser. Playback
+// continues in the background player. Not when focus moved into our own YouTube
+// frame (document still has focus) or to another app (browser window unfocused).
+let windowId;
+chrome.windows.getCurrent().then(w => { windowId = w.id; });
+const maybeHide = () => setTimeout(async () => {
+  if (state.pinned || document.hasFocus() || windowId == null) return;
+  const w = await chrome.windows.get(windowId).catch(() => null);
+  if (w?.focused) chrome.sidePanel.close?.({ windowId }).catch(() => {});
+}, 50);
+addEventListener('blur', maybeHide);
+// Focus inside the YouTube frame doesn't blur us when it leaves; frame.js tells us.
+addEventListener('message', e => {
+  if (e.source === frame.contentWindow && e.data?.ytSidebarBlur) maybeHide();
+});
+
+function setPinned(p) {
+  state.pinned = p;
+  $('pin').classList.toggle('active', p);
+}
+
 addEventListener('pagehide', saveNow);
 document.addEventListener('visibilitychange', () => document.hidden && saveNow());
 
@@ -131,6 +152,7 @@ $('popout').onclick = () => {
 };
 $('resume').onclick = () => load(state.app);
 $('min').onclick = () => { setMin(!state.minimized); saveNow(); };
+$('pin').onclick = () => { setPinned(!state.pinned); saveNow(); };
 qualitySel.onchange = () => { state.quality = qualitySel.value; sendQuality(); saveNow(); };
 
 // Take playback back from the background player (if the panel was closed while
@@ -146,6 +168,7 @@ Promise.all([
     resumePlay = bg.playing;
   }
   qualitySel.value = state.quality;
+  setPinned(!!state.pinned);
   setMin(state.minimized);
   load(state.app);
   connect();

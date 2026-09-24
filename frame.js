@@ -43,6 +43,9 @@
   for (const t of ['play', 'pause', 'ended', 'seeked', 'loadedmetadata', 'ratechange']) {
     document.addEventListener(t, onMedia, true);
   }
+  // Lets the panel auto-hide when focus leaves this frame for the web page.
+  addEventListener('blur', () => parent.postMessage({ ytSidebarBlur: true }, parentOrigin));
+
   // YouTube is a SPA: catch page changes that don't start a new video.
   document.addEventListener('yt-navigate-finish', () => setTimeout(report, 300));
   addEventListener('popstate', () => setTimeout(report, 300));

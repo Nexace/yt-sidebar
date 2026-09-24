@@ -17,6 +17,9 @@ YouTube and YouTube Music in a persistent browser side panel (Chrome, Edge, Brav
   panel, it continues in a hidden background player (control it from the browser's
   media button). Reopening the panel takes playback back at the current position.
   Closing while paused doesn't start anything.
+- **Auto-hide:** the panel closes when you click anywhere else in the browser (the music
+  keeps playing in the background). Click **📌** to keep it open. Switching to another
+  app doesn't close it.
 - **⧉ Open in tab** opens the current page in a normal tab at the same playback time and pauses the panel.
 - Quality cap (Auto / 360p / 144p) for video mode.
 - Auto-unloads YouTube after 10 min minimized and not playing; ⏯ resumes at the same spot.

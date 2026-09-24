@@ -112,6 +112,12 @@ $('play').onclick = () => asleep ? load(state.app) : send('toggle');
 $('next').onclick = () => send('next');
 $('prev').onclick = () => send('prev');
 $('reload').onclick = () => load(state.app);
+$('popout').onclick = () => {
+  const p = asleep ? state.pos[state.app] : currentPos();
+  const url = p ? withTime(p.url, p.time) : HOME[state.app];
+  if (!asleep) send('pause'); // hand playback over to the tab, don't double up audio
+  chrome.tabs.create({ url });
+};
 $('resume').onclick = () => load(state.app);
 $('min').onclick = () => { setMin(!state.minimized); saveNow(); };
 qualitySel.onchange = () => { state.quality = qualitySel.value; sendQuality(); saveNow(); };

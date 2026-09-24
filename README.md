@@ -13,6 +13,7 @@ YouTube and YouTube Music in a persistent browser side panel (Chrome, Edge, Brav
 - Same panel on every tab and site; Music / YouTube switch.
 - Remembers page + playback time per app across panel close and browser restart.
 - **▁ Minimize** collapses to a control bar; audio keeps playing, video drops to 144p.
+- **⧉ Open in tab** opens the current page in a normal tab at the same playback time and pauses the panel.
 - Quality cap (Auto / 360p / 144p) for video mode.
 - Auto-unloads YouTube after 10 min minimized and not playing; ⏯ resumes at the same spot.
 

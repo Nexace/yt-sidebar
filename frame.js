@@ -55,6 +55,9 @@
       case 'toggle':
         if (v) v.paused ? v.play() : v.pause();
         break;
+      case 'pause':
+        v?.pause();
+        break;
       case 'next':
         click(['.next-button', '.ytp-next-button']);
         break;

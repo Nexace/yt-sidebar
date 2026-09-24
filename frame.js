@@ -5,6 +5,11 @@
   if (window.top === window || location.ancestorOrigins?.[0] !== parentOrigin) return;
 
   const video = () => document.querySelector('video');
+  // Player API navigation via page.js; false if the API isn't there.
+  const nav = dir => {
+    window.dispatchEvent(new CustomEvent('ytsb-nav', { detail: dir }));
+    return document.documentElement.dataset.ytsbNav === 'ok';
+  };
   const click = sels => {
     for (const s of sels) {
       const el = document.querySelector(s);
@@ -110,11 +115,11 @@
         v?.pause();
         break;
       case 'next':
-        click(['.next-button', '.ytp-next-button']);
+        if (!nav('next')) click(['.next-button', '.ytp-next-button']);
         break;
       case 'prev':
-        if (v && v.currentTime > 3) v.currentTime = 0;
-        else if (!click(['.previous-button', '.ytp-prev-button'])) history.back();
+        if (v && v.currentTime > 3) apiSeek(0); // like every player: restart first
+        else if (!nav('prev')) click(['.previous-button', '.ytp-prev-button']);
         break;
       case 'quality':
         // Player API lives in the page's JS world; page.js (MAIN world) applies it.

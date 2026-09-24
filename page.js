@@ -24,6 +24,14 @@
     else { const v = document.querySelector('video'); if (v) v.currentTime = e.detail; }
   });
 
+  // Next / previous through the player API (stable across YouTube redesigns, unlike
+  // button selectors). Result is written to the DOM so frame.js can fall back.
+  addEventListener('ytsb-nav', e => {
+    const p = player();
+    const fn = e.detail === 'next' ? p?.nextVideo : p?.previousVideo;
+    document.documentElement.dataset.ytsbNav = fn ? (fn.call(p), 'ok') : '';
+  });
+
   // Quality cap.
   let wanted = 'auto';
   function apply() {

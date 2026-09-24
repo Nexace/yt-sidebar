@@ -39,12 +39,21 @@ Change them at `brave://extensions/shortcuts`. Global shortcuts must be Ctrl+Shi
 They control the panel if it's open, otherwise the background player. Your keyboard's
 hardware media keys also work, through the browser's own media controls.
 
-## Resource budget
+## Resource use
 
-The extension itself is event-driven: no polling while paused, one position report
-every 30 s while playing, storage writes only on changes. Almost all memory/CPU is
-YouTube's own page. Check with **Shift+Esc** (browser task manager): the extension
-entry should be a few MB and ~0% CPU when idle.
+The extension's own code is event-driven: no polling while paused, one position report
+every 30 s while playing, storage writes only on changes. Almost all the cost is
+YouTube's own page. Measured in headless Brave 152 (whole browser, YouTube Music):
+
+| State | Memory | CPU (one core) |
+|---|---|---|
+| Panel playing, ⚡ instant hide on | 828 MB | 22.8 % |
+| Panel playing, ⚡ off | 706 MB | 20.2 % |
+| Panel hidden, playing in background (144p) | 734 MB | 9.5 % |
+| Nothing playing (background copy closed) | 569 MB | 0.2 % |
+
+So the standby copy costs ~120 MB, and a YouTube player ~165 MB. The 569 MB baseline is
+the browser itself plus a test tab. Check your own numbers with **Shift+Esc**.
 
 ## Files
 
@@ -55,4 +64,4 @@ entry should be a few MB and ~0% CPU when idle.
 | `frame.js` | Inside the YouTube frame: reports playback, handles play/next/prev |
 | `player.*` | Offscreen player: standby copy while the panel plays, active player while it's closed |
 | `shared.js` | Position helpers shared by panel and service worker |
-| `page.js` | Inside the YouTube frame (page world): reads the current song/playlist and applies the quality cap via the player API |
+| `page.js` | Inside the YouTube frame (page world): player API for current song/playlist, seek, next/prev, quality cap |

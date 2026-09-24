@@ -34,22 +34,23 @@
   // when the song starts, advanced by the time spent on the ad.
   let syncing = false, holding = false, pendingSeek = null;
   const adShowing = () => !!document.querySelector('.ad-showing');
-  const seekTo = (v, time) => {
+  // page.js performs the seek via the player API (MAIN world).
+  const apiSeek = time => window.dispatchEvent(new CustomEvent('ytsb-seek', { detail: time }));
+  const seekTo = time => {
     if (time == null) return;
     if (adShowing()) pendingSeek = { time, at: Date.now() };
-    else v.currentTime = time;
+    else apiSeek(time);
   };
-  const applyPendingSeek = v => {
+  const applyPendingSeek = () => {
     if (!pendingSeek || adShowing()) return;
-    v.currentTime = pendingSeek.time + (Date.now() - pendingSeek.at) / 1000;
+    apiSeek(pendingSeek.time + (Date.now() - pendingSeek.at) / 1000);
     pendingSeek = null;
   };
   const holdMute = e => {
     const v = e.target;
     if (!(v instanceof HTMLMediaElement)) return;
     if (syncing || holding) v.muted = true;
-    if (e.type === 'loadedmetadata') return;
-    applyPendingSeek(v);
+    if (e.type === 'playing') applyPendingSeek(); // the song (not an ad) is really running
     if (e.type === 'play' && holding && !adShowing()) v.pause();
   };
   for (const t of ['play', 'playing', 'loadedmetadata']) document.addEventListener(t, holdMute, true);
@@ -125,16 +126,16 @@
         return;
       case 'hold':
         holding = true;
-        if (v) { v.muted = true; applyPendingSeek(v); if (!adShowing()) v.pause(); }
+        if (v) { v.muted = true; applyPendingSeek(); if (!adShowing()) v.pause(); }
         return;
       case 'seek':
-        if (v) seekTo(v, time);
+        seekTo(time);
         return;
       case 'sync-finish':
         syncing = false;
         holding = false;
         if (v) {
-          seekTo(v, time);
+          seekTo(time);
           v.muted = false;
           v.play().catch(() => {});
         }

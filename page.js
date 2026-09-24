@@ -16,6 +16,14 @@
       : '';
   });
 
+  // Seek through the player API so YouTube's own state follows (setting the
+  // <video>'s currentTime directly can be reverted by the player).
+  addEventListener('ytsb-seek', e => {
+    const p = player();
+    if (p?.seekTo) p.seekTo(e.detail, true);
+    else { const v = document.querySelector('video'); if (v) v.currentTime = e.detail; }
+  });
+
   // Quality cap.
   let wanted = 'auto';
   function apply() {

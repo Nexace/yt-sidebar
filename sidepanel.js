@@ -1,11 +1,10 @@
 const HOME = { music: 'https://music.youtube.com/', yt: 'https://www.youtube.com/' };
 const $ = id => document.getElementById(id);
-const frame = $('frame'), qualitySel = $('quality');
+const frame = $('frame');
 
-// { app, quality, pinned, instant, pos: { music: {url, time}, yt: {url, time} } }
-let state = { app: 'music', quality: 'auto', instant: true, pos: {} };
+// { app, pinned, instant, pos: { music: {url, time}, yt: {url, time} } }
+let state = { app: 'music', instant: true, pos: {} };
 let live = null;        // latest report from frame.js
-let qualitySent = null; // quality last sent to the current frame document
 let saveTimer = 0;
 let resumePlay = false; // keep nudging play until the frame starts (after a takeover)
 let port = null;
@@ -42,18 +41,10 @@ function saveNow() {
 // Coalesce bursts (e.g. seeked + play) into one write.
 const save = () => { clearTimeout(saveTimer); saveTimer = setTimeout(saveNow, 1000); };
 
-function sendQuality(force) {
-  const q = state.quality;
-  if (!live || (!force && q === qualitySent)) return;
-  send('quality', { quality: q });
-  qualitySent = q;
-}
-
 function load(app) {
   if (live) state.pos[state.app] = currentPos();
   state.app = app;
   live = null;
-  qualitySent = null;
   const p = state.pos[app];
   frame.src = p ? withTime(p.url, p.time) : HOME[app];
   document.querySelectorAll('#tabs button').forEach(b =>
@@ -95,9 +86,7 @@ async function finishTakeover() {
 // Reports from frame.js inside the YouTube iframe.
 addEventListener('message', e => {
   if (e.source !== frame.contentWindow || !e.data?.ytSidebarState) return;
-  const first = !live;
   live = e.data.ytSidebarState;
-  if (first) sendQuality(true); // fresh frame document starts at 'auto'
   if (live.playing) resumePlay = false;
   else if (resumePlay) send('play');
   if (takeover) {
@@ -154,7 +143,6 @@ $('popout').onclick = () => {
 };
 $('pin').onclick = () => { setPinned(!state.pinned); saveNow(); };
 $('instant').onclick = () => { setInstant(!state.instant); saveNow(); };
-qualitySel.onchange = () => { state.quality = qualitySel.value; sendQuality(); saveNow(); };
 
 // If the background player is running (panel was closed while playing), load
 // what it's playing and take over seamlessly; if it's paused, just stop it.
@@ -163,14 +151,13 @@ Promise.all([
   chrome.runtime.sendMessage({ type: 'peek' }).catch(() => null)
 ]).then(([{ state: saved }, bg]) => {
   if (saved) state = { ...state, ...saved, pos: saved.pos || {} };
-  delete state.minimized; // removed setting
+  delete state.minimized; delete state.quality; // removed settings
   if (bg?.url && bg.app) {
     state.app = bg.app;
     state.pos[bg.app] = { url: bg.url, time: bg.time };
     if (bg.playing) startTakeover(bg);
     else chrome.runtime.sendMessage({ type: 'release' }).catch(() => {});
   }
-  qualitySel.value = state.quality;
   setPinned(!!state.pinned);
   setInstant(state.instant !== false);
   load(state.app);

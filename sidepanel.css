@@ -8,9 +8,9 @@ html, body { margin: 0; height: 100%; background: var(--bg); color: var(--fg);
 #bar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px;
   padding: 6px 8px; border-bottom: 1px solid var(--line); }
 #tabs { display: flex; gap: 4px; }
-button, select { background: var(--bg); border: 1px solid var(--line); color: var(--fg);
+button { background: var(--bg); border: 1px solid var(--line); color: var(--fg);
   border-radius: 6px; padding: 3px 8px; cursor: pointer; font: inherit; }
-button:hover, select:hover { border-color: var(--muted); }
+button:hover { border-color: var(--muted); }
 #tabs button.active, .toggle.active { border-color: var(--accent); color: var(--accent); }
 .toggle:not(.active) { opacity: .5; }
 #controls { display: flex; gap: 4px; margin-left: auto; }

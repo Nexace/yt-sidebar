@@ -24,7 +24,6 @@ YouTube and YouTube Music in a persistent browser side panel (Chrome, Edge, Brav
   keeps playing in the background). Click **📌** to keep it open. Switching to another
   app doesn't close it.
 - **⧉ Open in tab** opens the current page in a normal tab at the same playback time and pauses the panel.
-- Quality cap (Auto / 360p / 144p) for video mode.
 
 ## Shortcuts
 
@@ -64,4 +63,4 @@ the browser itself plus a test tab. Check your own numbers with **Shift+Esc**.
 | `frame.js` | Inside the YouTube frame: reports playback, handles play/next/prev |
 | `player.*` | Offscreen player: standby copy while the panel plays, active player while it's closed |
 | `shared.js` | Position helpers shared by panel and service worker |
-| `page.js` | Inside the YouTube frame (page world): player API for current song/playlist, seek, next/prev, quality cap |
+| `page.js` | Inside the YouTube frame (page world): player API for current song/playlist, seek, next/prev, 144p for the hidden background copy |

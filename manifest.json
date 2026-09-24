@@ -8,7 +8,11 @@
   "host_permissions": ["https://*.youtube.com/*"],
   "background": { "service_worker": "background.js" },
   "side_panel": { "default_path": "sidepanel.html" },
-  "action": { "default_title": "Open YT Sidebar" },
+  "icons": { "16": "icons/icon16.png", "32": "icons/icon32.png", "48": "icons/icon48.png", "128": "icons/icon128.png" },
+  "action": {
+    "default_title": "Open YT Sidebar",
+    "default_icon": { "16": "icons/icon16.png", "32": "icons/icon32.png" }
+  },
   "commands": {
     "_execute_action": { "suggested_key": { "default": "Alt+Y" } }
   },

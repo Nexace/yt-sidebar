@@ -44,15 +44,30 @@ installRules();
 let chain = Promise.resolve();
 const serial = fn => (chain = chain.then(fn, fn));
 
+// The panel's latest state is kept in session storage too, so a close event that
+// wakes a freshly restarted worker still knows what was playing.
 chrome.runtime.onConnect.addListener(port => {
   if (port.name !== 'panel') return;
-  let last = null;
-  port.onMessage.addListener(msg => { if (msg.type === 'state') last = msg.state; });
-  port.onDisconnect.addListener(() => { if (last?.playing) serial(() => startBackground(last)); });
+  port.onMessage.addListener(msg => {
+    if (msg.type === 'state') chrome.storage.session.set({ panelState: msg.state });
+  });
+  port.onDisconnect.addListener(() => serial(() => panelClosed('port')));
 });
+// Official signal for the real side panel closing (Chromium 141+).
+chrome.sidePanel.onClosed?.addListener(() => serial(() => panelClosed('onClosed')));
+
+async function panelClosed(via) {
+  const { panelState: s } = await chrome.storage.session.get('panelState');
+  console.log('[yt-sidebar] panel closed via', via, '— playing:', !!s?.playing);
+  if (!s?.playing) return;
+  // Consume it so the second close signal (or a late one) doesn't start it again.
+  await chrome.storage.session.set({ panelState: { ...s, playing: false } });
+  await startBackground(s);
+}
 
 async function startBackground(s) {
   if (await chrome.offscreen.hasDocument()) return;
+  console.log('[yt-sidebar] starting background player for', s.url);
   const p = posNow(s);
   await chrome.storage.session.set({ bgApp: s.app });
   await chrome.offscreen.createDocument({
@@ -66,6 +81,7 @@ async function takeBack() {
   if (!(await chrome.offscreen.hasDocument())) return null;
   const r = await chrome.runtime.sendMessage({ type: 'bgQuery' }).catch(() => null);
   await chrome.offscreen.closeDocument();
+  console.log('[yt-sidebar] handoff to panel at', r && Math.round(posNow(r).time) + 's');
   if (!r) return null;
   const { bgApp } = await chrome.storage.session.get('bgApp');
   return { app: bgApp, ...posNow(r), playing: r.playing };

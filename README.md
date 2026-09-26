@@ -54,6 +54,19 @@ YouTube's own page. Measured in headless Brave 152 (whole browser, YouTube Music
 So the standby copy costs ~120 MB, and a YouTube player ~165 MB. The 569 MB baseline is
 the browser itself plus a test tab. Check your own numbers with **Shift+Esc**.
 
+## Testing
+
+`tests/smoke.mjs` drives a real headless Chromium browser (no dependencies, Node 22+):
+it loads the extension, opens the real side panel, plays YouTube Music and checks the
+shortcuts, standby preload, gapless hide, seamless reopen, next track and tab-switch
+behaviour.
+
+```
+node tests/smoke.mjs "C:\Program Files\BraveSoftware\Brave-Browser\Applicationrave.exe"
+```
+
+On macOS it runs in GitHub Actions: **Actions → macOS smoke test → Run workflow**.
+
 ## Files
 
 | File | Role |
@@ -63,4 +76,5 @@ the browser itself plus a test tab. Check your own numbers with **Shift+Esc**.
 | `frame.js` | Inside the YouTube frame: reports playback, handles play/next/prev |
 | `player.*` | Offscreen player: standby copy while the panel plays, active player while it's closed |
 | `shared.js` | Position helpers shared by panel and service worker |
+| `tests/` | End-to-end smoke test (Chrome DevTools Protocol over a pipe) |
 | `page.js` | Inside the YouTube frame (page world): player API for current song/playlist, seek, next/prev, 144p for the hidden background copy |

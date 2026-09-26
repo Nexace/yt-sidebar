@@ -1,0 +1,18 @@
+name: macOS smoke test
+
+# Manual only: macOS runner minutes count 10x against the private-repo quota.
+on: workflow_dispatch
+
+jobs:
+  chrome-macos:
+    runs-on: macos-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Chrome version
+        run: '"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --version'
+      - name: Smoke test
+        run: node tests/smoke.mjs "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"

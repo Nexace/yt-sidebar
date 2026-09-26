@@ -23,9 +23,11 @@ minimal CPU/memory (event-driven, auto-unload, quality cap).
 | 10. ⚡ instant-hide toggle | verified: standby closes when turned off |
 | 11. Global shortcuts Ctrl+Shift+7/8/9 | registered + routing verified (panel & background); real OS key press not testable headless |
 | 12. Resource measurement | headless Brave: standby ≈120 MB / +2.6 % CPU; background-only 9.5 % CPU |
+| 13. macOS (GitHub Actions, Chrome 152) | extension loads, ⌥Y/⇧⌘7-9 shortcuts, side panel, YT Music renders in panel. Playback untestable there: YouTube shows "confirm you're not a bot" to the runner IP even in a plain tab (control check). Needs a real Mac. |
 
 ## Testing notes
 - Headless Brave/Edge: YouTube Music refuses the `HeadlessChrome` UA; pass a normal `--user-agent`.
+- `tests/smoke.mjs` is the end-to-end check (13 checks). CI/cloud IPs get YouTube's bot wall, so run it on a home connection.
 - Real side panel can be opened in tests via `chrome.sidePanel.open` evaluated with `userGesture: true` in an extension page (not the SW).
 - Service worker logs `[yt-sidebar] …` lines for close/start/handoff — first place to look if background playback fails.
 

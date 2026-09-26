@@ -102,6 +102,17 @@ try {
     console.log('       player:', JSON.stringify(await ev(fs, `(()=>{const p=document.getElementById('movie_player');
       const err=document.querySelector('.ytp-error, yt-playability-error-supported-renderers, ytmusic-player .error, [class*="error"]');
       return {state:p?.getPlayerState?.(), video:${VID}, error:(err?.innerText||'').slice(0,200), url:location.href}})()`)));
+    // Control: does YouTube play at all on this machine, in a normal tab without the extension?
+    const url = await ev(fs, 'location.href');
+    const { targetId } = await b.send('Target.createTarget', { url });
+    const ts = await attach(targetId);
+    await wait(8000);
+    await ev(ts, `document.querySelector('video')?.play().catch(e => e.name)`, true);
+    const ctl = await until(async () => { const v = await ev(ts, VID); return v.p && v.t > 2 && v; }, 30000, 1000);
+    const ctlInfo = await ev(ts, `(()=>({state: document.getElementById('movie_player')?.getPlayerState?.(),
+      text: document.body.innerText.replace(/\\s+/g, ' ').slice(0, 300)}))()`);
+    check('control: same song in a normal tab (no extension)', !!ctl,
+      ctl ? `plays at ${ctl.t}s → the problem is in the extension` : `also doesn't play → environment, not the extension. state ${ctlInfo.state}; page: ${ctlInfo.text}`);
     throw new Error('no playback');
   }
 

@@ -96,7 +96,13 @@ try {
   await ev(fs, `document.querySelector('ytmusic-play-button-renderer').click()`);
   const playing = await until(async () => { const v = await ev(fs, VID); return v.p && !v.ad && v.t > 2 && v; }, 120000, 1000);
   check('song plays in the panel', !!playing, playing && `video ${playing.vid} at ${playing.t}s`);
-  if (!playing) throw new Error('no playback');
+  if (!playing) {
+    // Why not? (e.g. YouTube's "confirm you're not a bot" wall on cloud IPs)
+    console.log('       player:', JSON.stringify(await ev(fs, `(()=>{const p=document.getElementById('movie_player');
+      const err=document.querySelector('.ytp-error, yt-playability-error-supported-renderers, ytmusic-player .error, [class*="error"]');
+      return {state:p?.getPlayerState?.(), video:${VID}, error:(err?.innerText||'').slice(0,200), url:location.href}})()`)));
+    throw new Error('no playback');
+  }
 
   // 4. Standby copy preloaded (paused, muted, past any ad)
   const standby = await until(async () => {

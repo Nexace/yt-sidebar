@@ -93,7 +93,8 @@ try {
   if (!body) throw new Error('home not rendered');
 
   // 3. Play a song from the home page
-  await ev(fs, `document.querySelector('ytmusic-play-button-renderer').click()`);
+  // userGesture: like a real click, so Chrome's autoplay policy allows playback.
+  await ev(fs, `document.querySelector('ytmusic-play-button-renderer').click()`, true);
   const playing = await until(async () => { const v = await ev(fs, VID); return v.p && !v.ad && v.t > 2 && v; }, 120000, 1000);
   check('song plays in the panel', !!playing, playing && `video ${playing.vid} at ${playing.t}s`);
   if (!playing) {

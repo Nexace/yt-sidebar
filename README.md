@@ -62,7 +62,7 @@ shortcuts, standby preload, gapless hide, seamless reopen, next track and tab-sw
 behaviour.
 
 ```
-node tests/smoke.mjs "C:\Program Files\BraveSoftware\Brave-Browser\Applicationrave.exe"
+node tests/smoke.mjs "C:/Program Files/BraveSoftware/Brave-Browser/Application/brave.exe"
 ```
 
 On macOS it runs in GitHub Actions: **Actions → macOS smoke test → Run workflow**.

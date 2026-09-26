@@ -17,7 +17,9 @@ const os = platform() === 'darwin' ? 'Macintosh; Intel Mac OS X 10_15_7' : 'Wind
 const UA = `Mozilla/5.0 (${os}) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36`;
 
 const b = launch(exe, ['--headless=new', `--user-agent=${UA}`, '--enable-unsafe-extension-debugging',
-  `--user-data-dir=${prof}`, '--no-first-run', '--no-default-browser-check', '--mute-audio', 'https://example.com']);
+  `--user-data-dir=${prof}`, '--no-first-run', '--no-default-browser-check', '--mute-audio',
+  // CI machines (e.g. GitHub's macOS runners) have no sound device; play into a null sink.
+  '--disable-audio-output', 'https://example.com']);
 const swLogs = [];
 b.on(m => {
   if (m.method === 'Runtime.consoleAPICalled') swLogs.push(m.params.args.map(a => a.value ?? a.description).join(' '));
@@ -107,7 +109,7 @@ try {
     const { targetId } = await b.send('Target.createTarget', { url });
     const ts = await attach(targetId);
     await wait(8000);
-    await ev(ts, `document.querySelector('video')?.play().catch(e => e.name)`, true);
+    await ev(ts, `(document.querySelector('video')?.play().catch(() => {}), 1)`, true); // don't await play()
     const ctl = await until(async () => { const v = await ev(ts, VID); return v.p && v.t > 2 && v; }, 30000, 1000);
     const ctlInfo = await ev(ts, `(()=>({state: document.getElementById('movie_player')?.getPlayerState?.(),
       text: document.body.innerText.replace(/\\s+/g, ' ').slice(0, 300)}))()`);
